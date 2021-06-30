@@ -19,6 +19,8 @@ const TextInputBase: ForwardRefRenderFunction<HTMLInputElement, InputProps> = (
   { name, error = null, ...rest },
   ref
 ) => {
+
+  console.log(error)
   return (
     <FormControl
       display="flex"
