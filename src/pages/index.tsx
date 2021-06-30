@@ -8,6 +8,8 @@ import { api } from '../services/api';
 import { Loading } from '../components/Loading';
 import { Error } from '../components/Error';
 
+import apiImages from '../pages/api/images'
+
 export default function Home(): JSX.Element {
   const {
     data,
@@ -19,8 +21,10 @@ export default function Home(): JSX.Element {
   } = useInfiniteQuery(
     'images',
     // TODO AXIOS REQUEST WITH PARAM
+    () => api.get('/api/images')
     ,
     // TODO GET AND RETURN NEXT PAGE PARAM
+
   );
 
   const formattedData = useMemo(() => {
