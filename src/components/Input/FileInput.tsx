@@ -133,6 +133,7 @@ const FileInputBase: ForwardRefRenderFunction<
       }
     }, [cancelToken, error, isSending]);
 
+    console.log(error)
     return (
       <FormControl isInvalid={!!error}>
         <FormLabel

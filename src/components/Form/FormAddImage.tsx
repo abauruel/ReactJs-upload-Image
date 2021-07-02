@@ -7,8 +7,13 @@ import { api } from '../../services/api';
 import { FileInput } from '../Input/FileInput';
 import { TextInput } from '../Input/TextInput';
 
-import * as yup from 'yup'
-import { yupResolver } from '@hookform/resolvers/yup'
+
+type dataInput ={
+  title: string | unknown,
+  description: string | unknown,
+  url: string
+}
+
 
 
 interface FormAddImageProps {
@@ -20,14 +25,7 @@ export function FormAddImage({ closeModal }: FormAddImageProps): JSX.Element {
   const [localImageUrl, setLocalImageUrl] = useState('');
   const toast = useToast();
 
-  const schema = yup.object().shape({
-    image: yup.mixed()
-      .test('lessThan10MB',
-        'O arquivo deve ser menor que 10MB', (values) => values && values[0]?.size > 10000)
-      .test('acceptedFormats', 'Somente são aceitos arquivos PNG, JPEG e GIF', value => value && value[0].type !== 'image/png')
-    // .test('lessThan10MB','O arquivo deve ser menor que 10MB', (values)=> values[0].size <= 10000)
-    // .test('required', 'Arquivo obrigatório', values => values == null)
-  })
+
 
   const formValidations = {
     image: {
@@ -61,8 +59,10 @@ export function FormAddImage({ closeModal }: FormAddImageProps): JSX.Element {
   const queryClient = useQueryClient();
   const mutation = useMutation(
     // TODO MUTATION API POST REQUEST,
+    async (data: dataInput) => await api.post('/api/images',data),
     {
-      // TODO ONSUCCESS MUTATION
+      // TODO ONSUCCESS MUTATION\
+      onSuccess: async()=> { queryClient.invalidateQueries('images')}
     }
   );
 
@@ -73,23 +73,51 @@ export function FormAddImage({ closeModal }: FormAddImageProps): JSX.Element {
     formState,
     setError,
     trigger
-  } = useForm({
-    resolver: yupResolver(schema)
-  });
+  } = useForm();
   const { errors } = formState;
 
   const onSubmit = async (data: Record<string, unknown>): Promise<void> => {
-    console.log('chamou')
-    // console.log(data.image)
+
     try {
       // TODO SHOW ERROR TOAST IF IMAGE URL DOES NOT EXISTS
+      if(!imageUrl){
+        toast({
+          title:'Imagem não adicionada',
+          description:'É preciso adicionar e aguardar o upload de uma imagem antes de realizar o cadastro.',
+          status: 'error',
+          isClosable: true
+        })
+        throw new Error()
+      }
+
       // TODO EXECUTE ASYNC MUTATION
+      await mutation.mutateAsync({
+        description: data.description,
+        title: data.title ,
+        url: imageUrl
+      })
       // TODO SHOW SUCCESS TOAST
-      reset(data)
+       toast({
+          title:'Imagem cadastrada',
+          description:'Sua imagem foi cadastrada com sucesso.',
+          status: 'success',
+          isClosable: true
+        })
+        closeModal()
+       
     } catch {
       // TODO SHOW ERROR TOAST IF SUBMIT FAILED
+ 
+        toast({
+          title:'Falha no cadastro',
+          description:'Ocorreu um erro ao tentar cadastrar a sua imagem.',
+          status: 'error',
+          isClosable: true
+        })
+      
     } finally {
       // TODO CLEAN FORM, STATES AND CLOSE MODAL
+      reset(data)
     }
   };
 
@@ -105,10 +133,16 @@ export function FormAddImage({ closeModal }: FormAddImageProps): JSX.Element {
           // TODO SEND IMAGE ERRORS
           error={errors.image}
           // TODO REGISTER IMAGE INPUT WITH VALIDATIONS
-          {...register('image')}
+          {...register('image',{
+            required: {value: true, message: 'Arquivo obrigatório'},
+            validate: {
+              lessThan10MB: value => parseInt(value[0]?.size) > 10000 || 'O arquivo deve ser menor que 10MB',
+              acceptedFormats: value => value[0]?.type?.match(/image\/png|image\/jpeg|image\/gif/)?.length > 0 || 'Somente são aceitos arquivos PNG, JPEG e GIF'
+            }
+          })}
 
         />
-        <h1>{errors.image?.message}</h1>
+       
         <TextInput
           placeholder="Título da imagem..."
           // TODO SEND TITLE ERRORS
